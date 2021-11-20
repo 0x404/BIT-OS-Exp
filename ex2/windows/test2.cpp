@@ -1,7 +1,7 @@
 /*
  * @author: 0x404
  * @Date: 2021-11-18 21:45:55
- * @LastEditTime: 2021-11-19 14:08:19
+ * @LastEditTime: 2021-11-20 11:04:04
  * @Description: 
  */
 
@@ -14,6 +14,7 @@ using namespace std;
 
 double toDigit(char s[])
 {
+    // 将字符串转成对应的double类型
     double ans = 0;
     int i = 0;
     for (; i < strlen(s); ++i)
@@ -37,7 +38,7 @@ int main(int argc, char *argv[])
 {
     if (argc == 2)
     {
-        Sleep(toDigit(argv[1]) * 1000);
+        Sleep(toDigit(argv[1]) * 1000); // 睡眠对应的时间
         exit(0);
     }
     

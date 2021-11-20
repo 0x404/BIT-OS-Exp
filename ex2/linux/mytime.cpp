@@ -1,3 +1,9 @@
+/*
+ * @author: 0x404
+ * @Date: 2021-11-19 14:22:04
+ * @LastEditTime: 2021-11-20 11:09:01
+ * @Description: 
+ */
 #include <cstdio>
 #include <cstring>
 #include <iostream>
@@ -9,6 +15,8 @@
 
 void printTime(timeval &start, timeval &end)
 {
+    // 打印从start到end经历的时间
+    // 先将时间转成微秒，逐级往上计算
     long long ls_us = (end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec);
     long long t = ls_us;
     long long us = t % 1000;
@@ -22,66 +30,48 @@ void printTime(timeval &start, timeval &end)
     std::cout << h << "小时" << m << "分" << s << "秒" << ms << "毫秒" << us << "微秒";
 }
 
-double toDigit(char s[])
-{
-    double ans = 0;
-    int i = 0;
-    for (; i < strlen(s); ++i)
-    {
-        if (s[i] == '.')
-        {
-            i++;
-            break;
-        }
-        ans = ans * 10 + s[i] - '0';
-    }
-    double p = 0.1;
-    for (; i < strlen(s); ++i, p *= 0.1)
-    {
-        ans += (s[i] - '0') * p;
-    }
-    return ans;
-}
-
-
 int main(int argc, char *argv[])
 {
     if (argc == 2)
     {
         pid_t pid = fork();
-        timeval start;
+        timeval start, end;
         gettimeofday(&start, NULL);
-        if (pid > 0)
+        if (pid > 0) // 父进程
         {
             std::cout << "[parent process] : create child process." << std::endl;
-            wait(0);
-            timeval end;
+            wait(0);    // 等待子进程结束
+
+            // 获取系统时间并输出
             gettimeofday(&end, NULL);
             std::cout << "[parent process] : runtime [";
             printTime(start, end);
             std::cout << "]" << std::endl;
             std::cout << "[parent process] : parent process finished." << std::endl;
         }
-        else if (pid == 0)
+        else if (pid == 0) // 子进程
         {
             std::cout << "[child process] : child process start running." << std::endl;
             std::cout << "[child process] : child process call cmd " << argv[1] << std::endl;
-            int res = execlp(argv[1], argv[1], NULL);
-            std::cout << "[child process] : cmd " << argv[1] << " not found" <<std::endl;
+            
+            int res = execlp(argv[1], argv[1], NULL);   // 执行参数程序
+            
+            // 如果执行成功则不会执行下面的语句
+            std::cout << "[child process] : cmd " << argv[1] << " not found" <<std::endl;   
             exit(0);
         }
     }
     else if (argc == 3)
     {
         pid_t pid = fork();
-        timeval start;
+        timeval start, end;
         gettimeofday(&start, NULL);
-        if (pid > 0)
+        if (pid > 0) // 父进程
         {
             std::cout << "[parent process] : create child process." << std::endl;
-            wait(0);
+            wait(0);    // 等待子进程结束
 
-            timeval end;
+            // 获取系统时间并输出
             gettimeofday(&end, NULL);
             std::cout << "[parent process] : runtime [";
             printTime(start, end);
@@ -89,11 +79,14 @@ int main(int argc, char *argv[])
             std::cout << "[parent process] : parent process finished." << std::endl;
             exit(0);
         }
-        else if (pid == 0)
+        else if (pid == 0) // 子进程
         {
             std::cout << "[child process] : child process start running." << std::endl;
             std::cout << "[child process] : child process call cmd " << argv[1] << std::endl;
-            int res = execlp(argv[1], argv[1], argv[2], NULL);
+
+            int res = execlp(argv[1], argv[1], argv[2], NULL);   // 执行参数程序，并传递时间参数
+
+            // 如果执行成功则不会执行下面的语句
             std::cout << "[child process] : cmd " << argv[1] << " not found" <<std::endl;
             exit(0);
         }
