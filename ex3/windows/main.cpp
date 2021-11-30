@@ -1,7 +1,7 @@
 /*
  * @author: 0x404
  * @Date: 2021-11-29 20:12:07
- * @LastEditTime: 2021-11-29 22:24:39
+ * @LastEditTime: 2021-11-30 10:59:32
  * @Description: 
  */
 
@@ -14,7 +14,7 @@
 
 using namespace std;
 
-const int BUFFER_SIZE = 3;  //缓冲区大小
+const int BUFFER_SIZE = 4;  // 循环队列大小 = 缓冲区大小 + 1
 
 TCHAR mappingName[] = TEXT("myFileMapping");    // 共享缓冲文件名
 TCHAR mutexName[] = TEXT("myMutex");            // 互斥信号量名
@@ -55,14 +55,14 @@ int main()
         CloseHandle(mapFile);
         return 0;
     }
-    HANDLE empty = CreateSemaphore(NULL, BUFFER_SIZE, BUFFER_SIZE, emptyName);  // 创建empty信号量
+    HANDLE empty = CreateSemaphore(NULL, 3, 3, emptyName);  // 创建empty信号量
     if (empty == NULL)
     {
         cout << "[main process] : create empty semaphore failed." << endl;
         CloseHandle(mapFile);
         return 0;
     }
-    HANDLE full = CreateSemaphore(NULL, 0, BUFFER_SIZE, fullName);              // 创建full信号量
+    HANDLE full = CreateSemaphore(NULL, 0, 3, fullName);              // 创建full信号量
     if (full == NULL)
     {
         cout << "[main prcess] : create full semaphore failed." << endl;

@@ -1,7 +1,7 @@
 /*
  * @author: 0x404
  * @Date: 2021-11-29 21:07:56
- * @LastEditTime: 2021-11-29 22:28:27
+ * @LastEditTime: 2021-11-30 10:59:23
  * @Description: 
  */
 #include <cstdio>
@@ -15,7 +15,7 @@
 
 using namespace std;
 
-const int BUFFER_SIZE = 3;  //缓冲区大小
+const int BUFFER_SIZE = 4;  // 循环队列大小 = 缓冲区大小 + 1
 
 TCHAR mappingName[] = TEXT("myFileMapping");    // 共享缓冲文件名
 TCHAR mutexName[] = TEXT("myMutex");            // 互斥信号量名
@@ -71,7 +71,7 @@ int main()
 
     for (int i = 1; i <= 4; ++i)    // 消费者进程进行4次消费
     {
-        int sleepTime = rand() % 3000 + 1;
+        int sleepTime = rand() % 3000 + 1000;
         Sleep(sleepTime);   // 随机睡眠0-3秒
 
         WaitForSingleObject(full, INFINITE);
