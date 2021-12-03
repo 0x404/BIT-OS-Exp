@@ -149,7 +149,7 @@ int main()
 
 
 
-    int semId = semget(IPC_PRIVATE, 3, 0600 | IPC_CREAT);   // 常见信号量集
+    int semId = semget(IPC_PRIVATE, 3, 0600 | IPC_CREAT);   // 创建信号量集
 
     unsigned short initValArray[3] = {1, 3, 0};   // 三个信号量的初值 分别为MUTEX EMPTY FULL
     union semun semVal;

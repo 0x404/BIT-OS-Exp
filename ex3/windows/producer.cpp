@@ -1,7 +1,7 @@
 /*
  * @author: 0x404
  * @Date: 2021-11-29 20:53:15
- * @LastEditTime: 2021-11-30 10:59:35
+ * @LastEditTime: 2021-11-30 14:21:50
  * @Description: 
  */
 #include <cstdio>
@@ -71,7 +71,7 @@ int main()
 
     for (int i = 1; i <= 6; ++i)    // 每个生产者进程进行6次生产
     {
-        int sleepTime = rand() % 500 + 1;
+        int sleepTime = rand() % 3000 + 1;
         Sleep(sleepTime);   // 随机睡眠0-3秒
 
         WaitForSingleObject(empty, INFINITE);

@@ -1,7 +1,7 @@
 /*
  * @author: 0x404
  * @Date: 2021-11-29 21:07:56
- * @LastEditTime: 2021-11-30 10:59:23
+ * @LastEditTime: 2021-11-30 14:22:01
  * @Description: 
  */
 #include <cstdio>
@@ -71,7 +71,7 @@ int main()
 
     for (int i = 1; i <= 4; ++i)    // 消费者进程进行4次消费
     {
-        int sleepTime = rand() % 3000 + 1000;
+        int sleepTime = rand() % 3000 + 1;
         Sleep(sleepTime);   // 随机睡眠0-3秒
 
         WaitForSingleObject(full, INFINITE);
