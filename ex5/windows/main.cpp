@@ -1,8 +1,8 @@
 /*
  * @author: 0x404
  * @Date: 2021-12-10 15:47:33
- * @LastEditTime: 2021-12-10 19:05:22
- * @Description: 喵喵喵
+ * @LastEditTime: 2021-12-10 19:22:20
+ * @Description: 
  */
 #include <cstdio>
 #include <cstring>
@@ -30,6 +30,7 @@ bool copy_file(string sourcePath, string targetPath)
     HANDLE hFind = FindFirstFileA(sourcePath.c_str(), &lpFindData);
     HANDLE hSource = CreateFileA(sourcePath.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);    
     HANDLE hTarget = CreateFileA(targetPath.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
     if (hFind == INVALID_HANDLE_VALUE)
     {
         cout << "[error] : 复制文件" << sourcePath << "，源文件不存在" << endl;
@@ -46,16 +47,18 @@ bool copy_file(string sourcePath, string targetPath)
         return false;
     }
 
-    long long fileSize = lpFindData.nFileSizeLow - lpFindData.nFileSizeHigh;
+    long long fileSize = lpFindData.nFileSizeLow - lpFindData.nFileSizeHigh;    // 计算文件大小
     int *buffer = new int[fileSize];
     DWORD wordBit;
 
-    ReadFile(hSource, buffer, fileSize, &wordBit, NULL);
-    WriteFile(hTarget, buffer, fileSize, &wordBit, NULL);
+    ReadFile(hSource, buffer, fileSize, &wordBit, NULL);        // 读取源文件
+    WriteFile(hTarget, buffer, fileSize, &wordBit, NULL);       // 写入目标文件
 
+    // 设置目标文件的时间和属性
     SetFileTime(hTarget, &lpFindData.ftCreationTime, &lpFindData.ftLastAccessTime, &lpFindData.ftLastWriteTime);
     SetFileAttributes(targetPath.c_str(), GetFileAttributes(sourcePath.c_str()));
 
+    // 关闭句柄 释放资源
     CloseHandle(hFind);
     CloseHandle(hSource);
     CloseHandle(hTarget);
@@ -76,10 +79,11 @@ bool copy_dir(string sourcePath, string targetPath)
     {
         if (!strcmp(lpFindData.cFileName, ".") || !strcmp(lpFindData.cFileName, "..")) continue;
 
-        if (lpFindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        if (lpFindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) // 当前目录项是一个文件夹
         {
             string nexPath_source = nextPath(sourcePath, lpFindData.cFileName);
             string nexPath_target = nextPath(targetPath, lpFindData.cFileName);
+
             CreateDirectoryA(nexPath_target.c_str(), NULL);
             HANDLE hSource = CreateFileA(nexPath_source.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
             HANDLE hTarget = CreateFileA(nexPath_target.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
@@ -93,21 +97,28 @@ bool copy_dir(string sourcePath, string targetPath)
                 cout << "[error] : 打开" << nexPath_target << "失败."  << endl;
                 return false;
             }
+
+            // 设置复制文件目录的时间和属性
             FILETIME createTime, accessTime, writeTime;
 			GetFileTime(hSource, &createTime, &accessTime, &writeTime);
 			SetFileTime(hTarget, &createTime, &accessTime, &writeTime);
 			SetFileAttributes(nexPath_target.c_str(), GetFileAttributes(nexPath_source.c_str()));
-            copy_dir(nexPath_source, nexPath_target);
 
+            CloseHandle(hSource);   // 关闭句柄
+            CloseHandle(hTarget);   // 关闭句柄
+
+            copy_dir(nexPath_source, nexPath_target);   // 递归复制子目录
         }
-        else
+        else    // 当前目录项是一个普通文件
         {
             string nexPath_source = nextPath(sourcePath, lpFindData.cFileName);
             string nexPath_target = nextPath(targetPath, lpFindData.cFileName);
-            copy_file(nexPath_source, nexPath_target);
+            copy_file(nexPath_source, nexPath_target);  // 调用普通目录复制完成复制
         }
     }
-    while (FindNextFileA(hFind, &lpFindData) != 0);
+    while (FindNextFileA(hFind, &lpFindData) != 0);     // 遍历目录项
+
+    CloseHandle(hFind);     // 关闭句柄 释放资源
     if (showDetail)
         cout << "[copy directory] : " << sourcePath << " copy start." << endl;
     return true;
@@ -142,19 +153,20 @@ int main(int argc, char *argv[])
 
     string sourcePath = argv[1];
     string targetPath = argv[2];
+
+
     WIN32_FIND_DATAA lpFindData;
-    HANDLE hFind = FindFirstFileA(sourcePath.c_str(), &lpFindData);
+    HANDLE hFind = FindFirstFileA(sourcePath.c_str(), &lpFindData);     // 检查源文件夹是否存在
     if (hFind == INVALID_HANDLE_VALUE)
     {
         cout << "[error] : 源文件不存在." << endl;
         return 0;
     }
 
-    hFind = FindFirstFileA(targetPath.c_str(), &lpFindData);
+    hFind = FindFirstFileA(targetPath.c_str(), &lpFindData);            // 检查目标文件夹是否存在
     if (hFind == INVALID_HANDLE_VALUE)
     {
         CreateDirectoryA(targetPath.c_str(), NULL);
-	    
     }
 
     copy_dir(sourcePath, targetPath);
