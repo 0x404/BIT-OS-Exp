@@ -1,7 +1,7 @@
 /*
  * @author: 0x404
  * @Date: 2021-12-10 15:47:33
- * @LastEditTime: 2021-12-10 19:22:20
+ * @LastEditTime: 2021-12-10 19:38:15
  * @Description: 
  */
 #include <cstdio>
@@ -22,10 +22,16 @@ string nextPath(string now, string nex)
     return now + "\\" + nex;
 }
 
-bool copy_file(string sourcePath, string targetPath)
+
+
+bool copy_file(string sourcePath, string targetPath, int depth)
 {
     if (showDetail)
+    {
+        for (int i = 1; i <= 4 * depth; ++i) cout << "-";
         cout << "[copy file] : " << sourcePath << " copy start." << endl;
+    }
+
     WIN32_FIND_DATAA lpFindData;
     HANDLE hFind = FindFirstFileA(sourcePath.c_str(), &lpFindData);
     HANDLE hSource = CreateFileA(sourcePath.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);    
@@ -64,14 +70,45 @@ bool copy_file(string sourcePath, string targetPath)
     CloseHandle(hTarget);
 
     if (showDetail)
-        cout << "[copy file] : " << sourcePath << " copy finished." << endl;
+    {
+        for (int i = 1; i <= 4 * depth; ++i) cout << "-";
+        cout << "[copy file] : " << targetPath << " copy finished." << endl;
+    }
     return true;
 }
 
-bool copy_dir(string sourcePath, string targetPath)
+bool clear(string path)
+{
+    string nowPath = path + "\\*.*";
+    WIN32_FIND_DATAA lpFindData;
+    HANDLE hFind = FindFirstFileA(nowPath.c_str(), &lpFindData);
+    do
+    {
+        if (!strcmp(lpFindData.cFileName, ".") || !strcmp(lpFindData.cFileName, "..")) continue;
+
+        if (lpFindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        {
+            clear(nextPath(path, lpFindData.cFileName));
+        }
+        else
+        {
+            DeleteFileA(nextPath(path, lpFindData.cFileName).c_str());
+        }
+
+    } while (FindNextFileA(hFind, &lpFindData)); 
+    RemoveDirectoryA(path.c_str());
+    return true;
+}
+
+
+bool copy_dir(string sourcePath, string targetPath, int depth)
 {
     if (showDetail)
+    {
+        for (int i = 1; i <= 4 * depth; ++i) cout << "-";
         cout << "[copy directory] : " << sourcePath << " copy start." << endl;
+    }
+        
     string nowPath = sourcePath + "\\*.*";
     WIN32_FIND_DATAA lpFindData;
     HANDLE hFind = FindFirstFileA(nowPath.c_str(), &lpFindData);
@@ -107,20 +144,23 @@ bool copy_dir(string sourcePath, string targetPath)
             CloseHandle(hSource);   // 关闭句柄
             CloseHandle(hTarget);   // 关闭句柄
 
-            copy_dir(nexPath_source, nexPath_target);   // 递归复制子目录
+            copy_dir(nexPath_source, nexPath_target, depth + 2);   // 递归复制子目录
         }
         else    // 当前目录项是一个普通文件
         {
             string nexPath_source = nextPath(sourcePath, lpFindData.cFileName);
             string nexPath_target = nextPath(targetPath, lpFindData.cFileName);
-            copy_file(nexPath_source, nexPath_target);  // 调用普通目录复制完成复制
+            copy_file(nexPath_source, nexPath_target, depth + 1);  // 调用普通目录复制完成复制
         }
     }
     while (FindNextFileA(hFind, &lpFindData) != 0);     // 遍历目录项
 
     CloseHandle(hFind);     // 关闭句柄 释放资源
     if (showDetail)
-        cout << "[copy directory] : " << sourcePath << " copy start." << endl;
+    {
+        for (int i = 1; i <= 4 * depth; ++i) cout << "-";
+        cout << "[copy directory] : " << targetPath << " copy finished." << endl;
+    }
     return true;
 }
 
@@ -168,8 +208,8 @@ int main(int argc, char *argv[])
     {
         CreateDirectoryA(targetPath.c_str(), NULL);
     }
-
-    copy_dir(sourcePath, targetPath);
+    
+    copy_dir(sourcePath, targetPath, 0);
 
     return 0;
 }
