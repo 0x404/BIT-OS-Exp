@@ -1,8 +1,8 @@
 /*
  * @author: 0x404
  * @Date: 2021-12-10 15:47:33
- * @LastEditTime: 2021-12-10 16:45:13
- * @Description: 
+ * @LastEditTime: 2021-12-10 19:05:22
+ * @Description: 喵喵喵
  */
 #include <cstdio>
 #include <cstring>
@@ -24,18 +24,57 @@ string nextPath(string now, string nex)
 
 bool copy_file(string sourcePath, string targetPath)
 {
-    
+    if (showDetail)
+        cout << "[copy file] : " << sourcePath << " copy start." << endl;
+    WIN32_FIND_DATAA lpFindData;
+    HANDLE hFind = FindFirstFileA(sourcePath.c_str(), &lpFindData);
+    HANDLE hSource = CreateFileA(sourcePath.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);    
+    HANDLE hTarget = CreateFileA(targetPath.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFind == INVALID_HANDLE_VALUE)
+    {
+        cout << "[error] : 复制文件" << sourcePath << "，源文件不存在" << endl;
+        return false;
+    }
+    if (hSource == INVALID_HANDLE_VALUE)
+    {
+        cout << "[error] : 复制文件" << sourcePath << "， 源文件打开失败" << endl;
+        return false;
+    }
+    if (hTarget == INVALID_HANDLE_VALUE)
+    {
+        cout << "[error] : 复制文件" << targetPath << "，目标文件打开失败" << endl;
+        return false;
+    }
+
+    long long fileSize = lpFindData.nFileSizeLow - lpFindData.nFileSizeHigh;
+    int *buffer = new int[fileSize];
+    DWORD wordBit;
+
+    ReadFile(hSource, buffer, fileSize, &wordBit, NULL);
+    WriteFile(hTarget, buffer, fileSize, &wordBit, NULL);
+
+    SetFileTime(hTarget, &lpFindData.ftCreationTime, &lpFindData.ftLastAccessTime, &lpFindData.ftLastWriteTime);
+    SetFileAttributes(targetPath.c_str(), GetFileAttributes(sourcePath.c_str()));
+
+    CloseHandle(hFind);
+    CloseHandle(hSource);
+    CloseHandle(hTarget);
+
+    if (showDetail)
+        cout << "[copy file] : " << sourcePath << " copy finished." << endl;
+    return true;
 }
 
 bool copy_dir(string sourcePath, string targetPath)
 {
+    if (showDetail)
+        cout << "[copy directory] : " << sourcePath << " copy start." << endl;
     string nowPath = sourcePath + "\\*.*";
     WIN32_FIND_DATAA lpFindData;
     HANDLE hFind = FindFirstFileA(nowPath.c_str(), &lpFindData);
     do
     {
         if (!strcmp(lpFindData.cFileName, ".") || !strcmp(lpFindData.cFileName, "..")) continue;
-        cout << lpFindData.cFileName << endl;
 
         if (lpFindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
         {
@@ -63,11 +102,15 @@ bool copy_dir(string sourcePath, string targetPath)
         }
         else
         {
-
+            string nexPath_source = nextPath(sourcePath, lpFindData.cFileName);
+            string nexPath_target = nextPath(targetPath, lpFindData.cFileName);
+            copy_file(nexPath_source, nexPath_target);
         }
     }
     while (FindNextFileA(hFind, &lpFindData) != 0);
-    
+    if (showDetail)
+        cout << "[copy directory] : " << sourcePath << " copy start." << endl;
+    return true;
 }
 
 int main(int argc, char *argv[])
