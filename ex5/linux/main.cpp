@@ -39,7 +39,7 @@ void clear(string path)
     while (dirItem = readdir(dir))      // 遍历目录中的每一个目录项
     {
         if (!strcmp(dirItem->d_name, ".") || !strcmp(dirItem->d_name, "..")) continue;
-
+        
         string nexPath = nextPath(path, dirItem->d_name);
         if (isDir(nexPath))     // 如果是一个子目录，则递归清空
         {
@@ -53,10 +53,14 @@ void clear(string path)
     rmdir(path.c_str());    // 删除当前这个空白文件目录
 }
 
-bool copy_softLink(string sourcePath, string targetPath)
+bool copy_softLink(string sourcePath, string targetPath, int depth)
 {
     if (showDetail)
+    {
+        for (int i = 1; i <= 4 * depth; ++i) cout << "-";
         cout << "[soft link] : " << sourcePath << " start copy." << endl;
+    }
+        
     char buffer[4096];
     readlink(sourcePath.c_str(), buffer, 4096);
     symlink(buffer, targetPath.c_str());
@@ -70,16 +74,25 @@ bool copy_softLink(string sourcePath, string targetPath)
     ftime[1].tv_usec = 0;
     ftime[1].tv_sec = sourceFileInfo.st_mtime;
     lutimes(targetPath.c_str(), ftime);
+
     if (showDetail)
+    {
+        for (int i = 1; i <= 4 * depth; ++i) cout << "-";
         cout << "[soft link] : " << sourcePath << " copy finished." << endl;
+    }    
     return true;
 }
 
 
-bool copy_file(string sourcePath, string targetPath)
+bool copy_file(string sourcePath, string targetPath, int depth)
 {
+    
     if (showDetail)
+    {
+        for (int i = 1; i <= 4 * depth; ++i) cout << "-";
         cout << "[copy file] : " << sourcePath << " start copy." << endl;
+    }
+        
     int sourceFile, targetFile;
     if ((sourceFile = open(sourcePath.c_str(), O_RDONLY)) == -1)    // 打开源文件
     {
@@ -112,18 +125,27 @@ bool copy_file(string sourcePath, string targetPath)
             return false;
         }
     }
+
     if (showDetail)
+    {
+        for (int i = 1; i <= 4 * depth; ++i) cout << "-";
         cout << "[copy file] : " << sourcePath << " copy finished." << endl;
+    }
+        
     close(sourceFile);  // 关闭源文件
     close(targetFile);  // 关闭目标文件
     return true;
 }
 
 
-bool copy_dir(string sourcePath, string targetPath)
+bool copy_dir(string sourcePath, string targetPath, int depth)
 {
     if (showDetail)
+    {
+        for (int i = 1; i <= 4 * depth; ++i) cout << "-";
         cout << "[copy directory] : " << sourcePath << " start copy." << endl;
+    }
+        
     DIR *nowDir = opendir(sourcePath.c_str());
     dirent *dirItem;
     while (dirItem = readdir(nowDir))   // 遍历目录项
@@ -133,7 +155,7 @@ bool copy_dir(string sourcePath, string targetPath)
         {
             string nexPath_source = nextPath(sourcePath, dirItem->d_name);
             string nexPath_target = nextPath(targetPath, dirItem->d_name);
-            bool ret = copy_softLink(nexPath_source, nexPath_target);
+            bool ret = copy_softLink(nexPath_source, nexPath_target, depth + 1);
             if (!ret) return false;
         }
         else if (isDir(nextPath(sourcePath, dirItem->d_name)))   // 如果当前目录项是一个子目录
@@ -153,18 +175,23 @@ bool copy_dir(string sourcePath, string targetPath)
                 utimeInfo.modtime = sourceFileInfo.st_mtime;
                 utime(nexPath_target.c_str(), &utimeInfo);
             }
-            copy_dir(nexPath_source, nexPath_target);   // 递归复制子目录
+            copy_dir(nexPath_source, nexPath_target, depth + 2);   // 递归复制子目录
         }
         else    // 当前目录项是一个普通文件
         {
             string nexPath_source = nextPath(sourcePath, dirItem->d_name);
             string nexPath_target = nextPath(targetPath, dirItem->d_name);
-            bool ret = copy_file(nexPath_source, nexPath_target);   // 调用文件复制进行复制
+            bool ret = copy_file(nexPath_source, nexPath_target, depth + 1);   // 调用文件复制进行复制
             if (!ret) return false;
         }
     }
+
     if (showDetail)
+    {
+        for (int i = 1; i <= 4 * depth; ++i) cout << "-";
         cout << "[copy directory] : " << sourcePath << " copy finished." << endl;
+    }
+
     closedir(nowDir);
     return true;
 }
@@ -208,20 +235,22 @@ int main(int argc, char * argv[])
     }
 
     dir = opendir(targetDir.c_str());
-    if (dir) clear(targetDir);      // 如果目标文件夹存在，先清空
+    if (dir == NULL)
+    {
+        struct stat sourceFileInfo;
+        struct utimbuf utimeInfo;
 
-    // 创建目标文件夹
-    struct stat sourceFileInfo;
-    struct utimbuf utimeInfo;
+        stat(sourceDir.c_str(), &sourceFileInfo);
+        mkdir(targetDir.c_str(), sourceFileInfo.st_mode);
+        
+        utimeInfo.actime = sourceFileInfo.st_atime;
+        utimeInfo.modtime = sourceFileInfo.st_mtime;
+        utime(targetDir.c_str(), &utimeInfo);
+    }
 
-    stat(sourceDir.c_str(), &sourceFileInfo);
-    mkdir(targetDir.c_str(), sourceFileInfo.st_mode);
-    
-    utimeInfo.actime = sourceFileInfo.st_atime;
-    utimeInfo.modtime = sourceFileInfo.st_mtime;
-    utime(targetDir.c_str(), &utimeInfo);
 
-    copy_dir(sourceDir, targetDir); // 开始复制
+
+    copy_dir(sourceDir, targetDir, 0); // 开始复制
 
     return 0;
 }
