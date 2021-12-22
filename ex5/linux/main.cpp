@@ -63,16 +63,12 @@ bool copy_softLink(string sourcePath, string targetPath, int depth)
         
     char buffer[4096];
     readlink(sourcePath.c_str(), buffer, 4096);
-    cout << buffer << endl;
+    
     bool flag = false;
     if (buffer[0] == '.') flag = true;
 
     if (flag)
-    {
         realpath(sourcePath.c_str(), buffer);
-        cout << "source " << sourcePath << " real " << buffer << endl;
-
-    }
     
     symlink(buffer, targetPath.c_str());
 
@@ -121,9 +117,6 @@ bool copy_file(string sourcePath, string targetPath, int depth)
         cout << "[error] : 复制" << sourcePath << "文件，创建文件错误." << endl;
         return false;
     }
-    utimeInfo.actime = sourceFileInfo.st_atime;
-    utimeInfo.modtime = sourceFileInfo.st_mtime;
-    utime(targetPath.c_str(), &utimeInfo);  // 修改目标文件的时间
 
     int inputSize, outputSize;
     char buffer[4096];
@@ -136,6 +129,10 @@ bool copy_file(string sourcePath, string targetPath, int depth)
             return false;
         }
     }
+
+    utimeInfo.actime = sourceFileInfo.st_atime;
+    utimeInfo.modtime = sourceFileInfo.st_mtime;
+    utime(targetPath.c_str(), &utimeInfo);  // 修改目标文件的时间
 
     if (showDetail)
     {
@@ -181,12 +178,15 @@ bool copy_dir(string sourcePath, string targetPath, int depth)
 
                 stat(nexPath_source.c_str(), &sourceFileInfo);
                 mkdir(nexPath_target.c_str(), sourceFileInfo.st_mode);
-                
-                utimeInfo.actime = sourceFileInfo.st_atime;
-                utimeInfo.modtime = sourceFileInfo.st_mtime;
-                utime(nexPath_target.c_str(), &utimeInfo);
             }
             copy_dir(nexPath_source, nexPath_target, depth + 2);   // 递归复制子目录
+
+            struct stat sourceFileInfo;
+            struct utimbuf utimeInfo;
+            stat(nexPath_source.c_str(), &sourceFileInfo);
+            utimeInfo.actime = sourceFileInfo.st_atime;
+            utimeInfo.modtime = sourceFileInfo.st_mtime;
+            utime(nexPath_target.c_str(), &utimeInfo);
         }
         else    // 当前目录项是一个普通文件
         {
@@ -249,19 +249,19 @@ int main(int argc, char * argv[])
     if (dir == NULL)
     {
         struct stat sourceFileInfo;
-        struct utimbuf utimeInfo;
-
         stat(sourceDir.c_str(), &sourceFileInfo);
         mkdir(targetDir.c_str(), sourceFileInfo.st_mode);
-        
-        utimeInfo.actime = sourceFileInfo.st_atime;
-        utimeInfo.modtime = sourceFileInfo.st_mtime;
-        utime(targetDir.c_str(), &utimeInfo);
     }
 
 
-
     copy_dir(sourceDir, targetDir, 0); // 开始复制
+
+    struct utimbuf utimeInfo;
+    struct stat sourceFileInfo;
+    stat(sourceDir.c_str(), &sourceFileInfo);
+    utimeInfo.actime = sourceFileInfo.st_atime;
+    utimeInfo.modtime = sourceFileInfo.st_mtime;
+    utime(targetDir.c_str(), &utimeInfo);
 
     return 0;
 }

@@ -1,7 +1,7 @@
 /*
  * @author: 0x404
  * @Date: 2021-12-10 15:47:33
- * @LastEditTime: 2021-12-10 19:38:15
+ * @LastEditTime: 2021-12-23 05:51:16
  * @Description: 
  */
 #include <cstdio>
@@ -34,7 +34,7 @@ bool copy_file(string sourcePath, string targetPath, int depth)
 
     WIN32_FIND_DATAA lpFindData;
     HANDLE hFind = FindFirstFileA(sourcePath.c_str(), &lpFindData);
-    HANDLE hSource = CreateFileA(sourcePath.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);    
+    HANDLE hSource = CreateFileA(sourcePath.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);    
     HANDLE hTarget = CreateFileA(targetPath.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
     if (hFind == INVALID_HANDLE_VALUE)
@@ -122,7 +122,7 @@ bool copy_dir(string sourcePath, string targetPath, int depth)
             string nexPath_target = nextPath(targetPath, lpFindData.cFileName);
 
             CreateDirectoryA(nexPath_target.c_str(), NULL);
-            HANDLE hSource = CreateFileA(nexPath_source.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+            HANDLE hSource = CreateFileA(nexPath_source.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
             HANDLE hTarget = CreateFileA(nexPath_target.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
             if (hSource == INVALID_HANDLE_VALUE)
             {
@@ -135,16 +135,19 @@ bool copy_dir(string sourcePath, string targetPath, int depth)
                 return false;
             }
 
+            copy_dir(nexPath_source, nexPath_target, depth + 2);   // 递归复制子目录
+
             // 设置复制文件目录的时间和属性
             FILETIME createTime, accessTime, writeTime;
 			GetFileTime(hSource, &createTime, &accessTime, &writeTime);
 			SetFileTime(hTarget, &createTime, &accessTime, &writeTime);
+
 			SetFileAttributes(nexPath_target.c_str(), GetFileAttributes(nexPath_source.c_str()));
 
             CloseHandle(hSource);   // 关闭句柄
             CloseHandle(hTarget);   // 关闭句柄
 
-            copy_dir(nexPath_source, nexPath_target, depth + 2);   // 递归复制子目录
+            
         }
         else    // 当前目录项是一个普通文件
         {
@@ -178,6 +181,7 @@ int main(int argc, char *argv[])
         cout << "mycp [source path] [target path] -show \t 显示复制过程" << endl;
         return 0;
     }
+    
     if (argc == 4)
     {
         if (strcmp(argv[3], "-show") == 0)
@@ -190,7 +194,7 @@ int main(int argc, char *argv[])
             return 0;
         }
     }
-
+    
     string sourcePath = argv[1];
     string targetPath = argv[2];
 
@@ -202,6 +206,7 @@ int main(int argc, char *argv[])
         cout << "[error] : 源文件不存在." << endl;
         return 0;
     }
+    CloseHandle(hFind);
 
     hFind = FindFirstFileA(targetPath.c_str(), &lpFindData);            // 检查目标文件夹是否存在
     if (hFind == INVALID_HANDLE_VALUE)
@@ -211,5 +216,15 @@ int main(int argc, char *argv[])
     
     copy_dir(sourcePath, targetPath, 0);
 
+    HANDLE hSource = CreateFileA(sourcePath.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    HANDLE hTarget = CreateFileA(targetPath.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    FILETIME createTime, accessTime, writeTime;
+    GetFileTime(hSource, &createTime, &accessTime, &writeTime);
+    SetFileTime(hTarget, &createTime, &accessTime, &writeTime);
+
+    SetFileAttributes(targetPath.c_str(), GetFileAttributes(sourcePath.c_str()));
+
+    CloseHandle(hSource);
+    CloseHandle(hTarget);
     return 0;
-}
+}   
