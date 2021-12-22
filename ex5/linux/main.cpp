@@ -63,6 +63,17 @@ bool copy_softLink(string sourcePath, string targetPath, int depth)
         
     char buffer[4096];
     readlink(sourcePath.c_str(), buffer, 4096);
+    cout << buffer << endl;
+    bool flag = false;
+    if (buffer[0] == '.') flag = true;
+
+    if (flag)
+    {
+        realpath(sourcePath.c_str(), buffer);
+        cout << "source " << sourcePath << " real " << buffer << endl;
+
+    }
+    
     symlink(buffer, targetPath.c_str());
 
     struct stat sourceFileInfo;
